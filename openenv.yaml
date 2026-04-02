@@ -1,0 +1,92 @@
+name: sql-query-debugging
+version: "1.0.0"
+description: >
+  An OpenEnv environment for training and evaluating AI agents on real-world SQL
+  debugging and optimization tasks. Agents fix syntax errors, correct logic bugs,
+  and rewrite inefficient correlated subqueries — skills every data engineer needs.
+author: ""
+tags:
+  - openenv
+  - sql
+  - debugging
+  - optimization
+  - code
+  - real-world
+
+tasks:
+  - id: easy_syntax_fix
+    name: "Fix SQL Syntax Error"
+    difficulty: easy
+    description: >
+      A SELECT statement is missing the FROM keyword. Fix it so it returns
+      all customers older than 30, ordered by name.
+    max_steps: 5
+    reward_threshold: 0.8
+
+  - id: medium_logic_fix
+    name: "Fix SQL Logic Bug (HAVING vs WHERE)"
+    difficulty: medium
+    description: >
+      A query incorrectly uses WHERE with an aggregate function AVG(salary).
+      Fix it to return departments where the average salary exceeds 60,000.
+    max_steps: 8
+    reward_threshold: 0.8
+
+  - id: hard_optimization
+    name: "Optimize Correlated Subquery"
+    difficulty: hard
+    description: >
+      A query uses four correlated subqueries (O(n²) complexity). Rewrite it
+      with a single JOIN + GROUP BY to produce identical results efficiently.
+    max_steps: 10
+    reward_threshold: 0.7
+
+action_space:
+  type: object
+  required:
+    - sql_query
+  properties:
+    sql_query:
+      type: string
+      description: "The SQL query submitted as an attempt"
+    explanation:
+      type: string
+      description: "Agent's optional reasoning about the fix"
+
+observation_space:
+  type: object
+  properties:
+    task_id:
+      type: string
+    task_description:
+      type: string
+    broken_query:
+      type: string
+    schema_info:
+      type: string
+    error_message:
+      type: string
+      nullable: true
+    last_submission:
+      type: string
+      nullable: true
+    last_execution_result:
+      type: object
+      nullable: true
+    hint:
+      type: string
+      nullable: true
+    step_number:
+      type: integer
+    max_steps:
+      type: integer
+    done:
+      type: boolean
+
+endpoints:
+  reset: "POST /reset"
+  step: "POST /step"
+  state: "GET /state"
+  tasks: "GET /tasks"
+  grader: "POST /grader"
+  baseline: "POST /baseline"
