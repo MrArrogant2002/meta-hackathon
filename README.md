@@ -84,13 +84,44 @@ Efficiency bonus: up to +0.2 for solving early in the episode.
 | POST | `/baseline` | Run deterministic baseline, returns reproducible scores |
 | GET | `/health` | Health check |
 
+## Project Structure
+
+```
+.
+├── Dockerfile               # Container config (port 7860, single worker)
+├── pyproject.toml           # Project metadata, dependencies, entry point
+├── uv.lock                  # Locked dependency versions (uv)
+├── requirements.txt         # pip-compatible dependency list
+├── openenv.yaml             # OpenEnv spec metadata
+├── inference.py             # LLM baseline script (repo root, required by validator)
+├── app/
+│   ├── main.py              # FastAPI app + all endpoints
+│   ├── environment.py       # reset / step / state logic
+│   ├── models.py            # Pydantic typed models
+│   ├── database.py          # SQLite schema + seed data
+│   ├── tasks.py             # Task definitions + graders
+│   └── session_store.py     # Thread-safe in-memory session management
+├── baseline/
+│   ├── inference.py         # LLM baseline (importable module)
+│   └── rule_based.py        # Deterministic rule-based solver
+└── server/
+    └── app.py               # Entry point for multi-mode deployment
+```
+
 ## Setup & Usage
 
-### Local Development
+### Local (pip)
 
 ```bash
 pip install -r requirements.txt
 uvicorn app.main:app --host 0.0.0.0 --port 7860 --workers 1
+```
+
+### Local (uv)
+
+```bash
+uv sync
+uv run server
 ```
 
 ### Docker
@@ -107,7 +138,7 @@ import requests
 
 BASE = "http://localhost:7860"
 
-# Start episode
+# Start episode — task_id optional, defaults to easy_syntax_fix
 r = requests.post(f"{BASE}/reset", json={"task_id": "easy_syntax_fix"})
 data = r.json()
 session_id = data["session_id"]
@@ -128,7 +159,12 @@ print(f"Solved: {result['info']['solved']}")         # → True
 
 ```bash
 export HF_TOKEN=your_hf_token
-python -m baseline.inference --host http://localhost:7860 --model Qwen/Qwen2.5-Coder-7B-Instruct
+
+# From repo root
+python inference.py --host http://localhost:7860 --model Qwen/Qwen2.5-Coder-7B-Instruct
+
+# Or as module
+python -m baseline.inference --host http://localhost:7860
 ```
 
 ## Baseline Scores
