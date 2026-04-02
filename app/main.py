@@ -62,10 +62,10 @@ def health():
 # ─── OpenEnv Core Endpoints ───────────────────────────────────────────────────
 
 @app.post("/reset", response_model=ResetResponse, tags=["openenv"])
-def reset(req: ResetRequest):
+def reset(req: Optional[ResetRequest] = None):
     """Reset the environment for a given task. Returns initial observation and session_id."""
     try:
-        return env.reset(req)
+        return env.reset(req or ResetRequest())
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

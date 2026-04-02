@@ -51,7 +51,7 @@ class StepResponse(BaseModel):
 
 
 class ResetRequest(BaseModel):
-    task_id: str = Field(..., description="One of: easy_syntax_fix, medium_logic_fix, hard_optimization")
+    task_id: str = Field(default="easy_syntax_fix", description="One of: easy_syntax_fix, medium_logic_fix, hard_optimization")
     session_id: Optional[str] = Field(default=None, description="Reuse existing session ID or omit to create new")
 
 
