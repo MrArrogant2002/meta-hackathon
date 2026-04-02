@@ -128,7 +128,7 @@ def main():
     args = parser.parse_args()
 
     hf_token = os.environ.get("HF_TOKEN")
-    client = InferenceClient(token=hf_token)
+    client = InferenceClient(token=hf_token, base_url="https://router.huggingface.co")
 
     print(f"Running baseline with model: {args.model}")
     print(f"Environment host: {args.host}")

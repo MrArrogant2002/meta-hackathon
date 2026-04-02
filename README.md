@@ -131,12 +131,29 @@ export HF_TOKEN=your_hf_token
 python -m baseline.inference --host http://localhost:7860 --model Qwen/Qwen2.5-Coder-7B-Instruct
 ```
 
-## Baseline Scores (Rule-Based Deterministic Agent)
+## Baseline Scores
+
+### LLM Agent — `Qwen/Qwen2.5-Coder-7B-Instruct`
+
+| Task | Score | Steps | Solved |
+|------|-------|-------|--------|
+| easy_syntax_fix | 1.000 | 1 | ✅ |
+| medium_logic_fix | 1.000 | 1 | ✅ |
+| hard_optimization | 1.000 | 1 | ✅ |
+| **Average** | **1.000** | **1** | |
+
+To reproduce:
+```bash
+export HF_TOKEN=your_hf_token
+python -m baseline.inference --host http://localhost:7860 --model Qwen/Qwen2.5-Coder-7B-Instruct
+```
+
+### Rule-Based Deterministic Agent
 
 | Task | Score | Solved |
 |------|-------|--------|
-| easy_syntax_fix | 1.00 | ✅ |
-| medium_logic_fix | 1.00 | ✅ |
-| hard_optimization | 1.00 | ✅ |
+| easy_syntax_fix | 1.000 | ✅ |
+| medium_logic_fix | 1.000 | ✅ |
+| hard_optimization | 1.000 | ✅ |
 
-To reproduce: `POST /baseline` — no external dependencies required.
+To reproduce (no external dependencies): `POST /baseline`
