@@ -1,4 +1,5 @@
-FROM python:3.11-slim
+# Use fully qualified image with digest to avoid registry issues
+FROM python@sha256:f966cda3c2d5b990db2a7af10ef891f5ca685c7d0c6a83378948f1cd09c27ecd
 
 # HF Spaces runs containers as uid 1000
 RUN useradd -m -u 1000 appuser
