@@ -189,8 +189,8 @@ def run_task(task_id: str, client: OpenAI) -> dict:
                 success = info.get("solved", False)
                 break
         
-        # Clamp score to [0, 1]
-        score = min(max(score, 0.0), 1.0)
+        # Clamp score to (0, 1) - strictly between, never exactly 0.0 or 1.0
+        score = max(0.001, min(score, 0.999))
         
     except Exception as e:
         print(f"[DEBUG] Task error: {e}", flush=True)

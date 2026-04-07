@@ -113,7 +113,9 @@ def grade_easy(sql: str, conn: sqlite3.Connection) -> tuple[float, dict]:
     else:
         breakdown["correct_result"] = 0.0
 
-    score = min(sum(breakdown.values()), 1.0)
+    score = sum(breakdown.values())
+    # Clamp score to (0, 1) - strictly between, never exactly 0.0 or 1.0
+    score = max(0.001, min(score, 0.999))
     return score, breakdown
 
 
@@ -146,7 +148,9 @@ def grade_medium(sql: str, conn: sqlite3.Connection) -> tuple[float, dict]:
     else:
         breakdown["correct_result"] = 0.0
 
-    score = min(sum(breakdown.values()), 1.0)
+    score = sum(breakdown.values())
+    # Clamp score to (0, 1) - strictly between, never exactly 0.0 or 1.0
+    score = max(0.001, min(score, 0.999))
     return score, breakdown
 
 
@@ -210,7 +214,9 @@ def grade_hard(sql: str, conn: sqlite3.Connection) -> tuple[float, dict]:
     else:
         breakdown["subquery_free_bonus"] = 0.0
 
-    score = min(sum(breakdown.values()), 1.0)
+    score = sum(breakdown.values())
+    # Clamp score to (0, 1) - strictly between, never exactly 0.0 or 1.0
+    score = max(0.001, min(score, 0.999))
     return score, breakdown
 
 
