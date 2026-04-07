@@ -123,7 +123,7 @@ def run_task(task_id: str, client: OpenAI) -> dict:
     
     rewards: List[float] = []
     steps_taken = 0
-    score = 0.0
+    score = 0.001  # Must be > 0.0 for Phase 2 validation
     success = False
     
     try:

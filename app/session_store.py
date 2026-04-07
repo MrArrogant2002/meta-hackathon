@@ -15,7 +15,7 @@ class Session:
     step_number: int = 0
     done: bool = False
     cumulative_reward: float = 0.0
-    best_score: float = 0.0
+    best_score: float = 0.001  # Must be > 0.0 for Phase 2 validation
     history: list = field(default_factory=list)
     last_observation: dict = field(default_factory=dict)
     created_at: datetime = field(default_factory=datetime.utcnow)

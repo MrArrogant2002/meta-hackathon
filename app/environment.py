@@ -172,7 +172,7 @@ def get_grader_score(session_id: str):
         score = best_entry["score"]
         breakdown = best_entry["breakdown"]
     else:
-        score = 0.0
+        score = 0.001  # Must be > 0.0 for Phase 2 validation
         breakdown = {}
 
     return GraderResponse(
