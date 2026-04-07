@@ -173,10 +173,10 @@ python -m baseline.inference --host http://localhost:7860
 
 | Task | Score | Steps | Solved |
 |------|-------|-------|--------|
-| easy_syntax_fix | 1.000 | 1 | ✅ |
-| medium_logic_fix | 1.000 | 1 | ✅ |
-| hard_optimization | 1.000 | 1 | ✅ |
-| **Average** | **1.000** | **1** | |
+| easy_syntax_fix | 0.999 | 1 | ✅ |
+| medium_logic_fix | 0.999 | 1 | ✅ |
+| hard_optimization | 0.999 | 1 | ✅ |
+| **Average** | **0.999** | **1** | |
 
 To reproduce:
 ```bash
@@ -188,8 +188,8 @@ python -m baseline.inference --host http://localhost:7860 --model Qwen/Qwen2.5-C
 
 | Task | Score | Solved |
 |------|-------|--------|
-| easy_syntax_fix | 1.000 | ✅ |
-| medium_logic_fix | 1.000 | ✅ |
-| hard_optimization | 1.000 | ✅ |
+| easy_syntax_fix | 0.999 | ✅ |
+| medium_logic_fix | 0.999 | ✅ |
+| hard_optimization | 0.999 | ✅ |
 
 To reproduce (no external dependencies): `POST /baseline`
