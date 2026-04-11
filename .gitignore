@@ -8,5 +8,6 @@ __pycache__/
 .ruff_cache/
 .venv/
 .uv_cache/
+*.egg-info/
 .DS_Store
 baseline_results.json

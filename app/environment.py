@@ -13,6 +13,13 @@ from app.models import (
 from app.session_store import Session, store
 from app.tasks import TASK_REGISTRY, build_initial_state, get_hint, grade_action, validate_action
 
+MIN_PUBLIC_SCORE = 0.01
+MAX_PUBLIC_SCORE = 0.99
+
+
+def _normalize_public_score(score: float) -> float:
+    return round(min(max(score, MIN_PUBLIC_SCORE), MAX_PUBLIC_SCORE), 4)
+
 
 def _build_observation(session: Session, task_cfg: dict[str, Any]) -> Observation:
     state = session.state
@@ -112,16 +119,18 @@ def step(session_id: str, action: Action) -> StepResponse:
     )
 
     observation = _build_observation(session, task_cfg)
+    public_score = _normalize_public_score(score)
+    public_best_score = _normalize_public_score(session.best_score)
     reward = Reward(
         value=reward_value,
         components=breakdown,
-        reason=f"grader_score={score:.3f}",
+        reason=f"grader_score={public_score:.3f}",
     )
     info = {
         "task_id": session.task_id,
         "step_number": session.step_number,
-        "grader_score": round(score, 4),
-        "best_score_so_far": round(session.best_score, 4),
+        "grader_score": public_score,
+        "best_score_so_far": public_best_score,
         "grader_breakdown": breakdown,
         "solved": solved,
         "timeout": timeout and not solved,
@@ -145,7 +154,7 @@ def get_state(session_id: str):
         step_number=session.step_number,
         done=session.done,
         cumulative_reward=session.cumulative_reward,
-        best_score=round(session.best_score, 4),
+        best_score=_normalize_public_score(session.best_score),
         state=session.state,
         history=session.history,
     )
@@ -170,9 +179,8 @@ def get_grader_score(session_id: str):
     return GraderResponse(
         session_id=session.session_id,
         task_id=session.task_id,
-        final_score=round(score, 4),
+        final_score=_normalize_public_score(score),
         breakdown=breakdown,
         solved=score >= task_cfg["reward_threshold"],
         done=session.done,
     )
-

@@ -4,5 +4,7 @@
 __pycache__/
 *.pyc
 *.pyo
+.venv/
 .uv_cache/
+*.egg-info/
 baseline_results.json

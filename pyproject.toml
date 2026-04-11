@@ -20,5 +20,8 @@ dependencies = [
 [project.scripts]
 server = "server.app:main"
 
+[tool.setuptools]
+packages = ["app", "server", "baseline"]
+
 [tool.uv]
 cache-dir = ".uv_cache"
