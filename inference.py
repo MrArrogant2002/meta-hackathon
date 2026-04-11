@@ -34,6 +34,8 @@ MAX_STEPS_PER_TASK = {
 }
 TEMPERATURE = 0.0
 MAX_TOKENS = 300
+MIN_REPORTED_SCORE = 0.01
+MAX_REPORTED_SCORE = 0.99
 
 SYSTEM_PROMPT = (
     "You are a customer support operations agent. "
@@ -63,6 +65,10 @@ def log_end(success: bool, steps: int, score: float, rewards: list[float]) -> No
         f"[END] success={str(success).lower()} steps={steps} score={score:.3f} rewards={rewards_str}",
         flush=True,
     )
+
+
+def _normalize_reported_score(score: float) -> float:
+    return min(max(score, MIN_REPORTED_SCORE), MAX_REPORTED_SCORE)
 
 
 def _default_action(task_id: str, observation: dict[str, Any]) -> dict[str, Any]:
@@ -204,7 +210,12 @@ def run_task(task_id: str, client: OpenAI) -> dict[str, Any]:
             error=str(exc),
         )
     finally:
-        log_end(success=success, steps=steps_taken, score=best_score, rewards=rewards)
+        log_end(
+            success=success,
+            steps=steps_taken,
+            score=_normalize_reported_score(best_score),
+            rewards=rewards,
+        )
 
     return {
         "task_id": task_id,
@@ -223,4 +234,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
