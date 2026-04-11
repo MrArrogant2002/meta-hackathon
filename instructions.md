@@ -89,7 +89,7 @@ Implement the full OpenEnv interface:
 
 #### Minimum 3 tasks with agent graders
 
-Each task must define a concrete objective the agent must accomplish, with a programmatic grader that scores performance strictly within `(0, 1)`.
+Each task must define a concrete objective the agent must accomplish, with a programmatic grader whose returned score is strictly within `(0, 1)`.
 
 Requirements:
 
@@ -255,7 +255,7 @@ All of these must pass or you are disqualified.
 
 - Enumerate tasks
 - Run each grader
-- Verify task scores stay strictly within `(0, 1)` and rewards stay within `[0.0, 1.0]`
+- Verify each grader's returned task score stays strictly within `(0, 1)` and rewards stay within `[0.0, 1.0]`
 
 ## Mandatory Additional Instructions
 

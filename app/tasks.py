@@ -16,10 +16,16 @@ TASK_IDS = [
     "medium_missing_info_tech_issue",
     "hard_policy_edge_case",
 ]
+MIN_TASK_SCORE = 0.01
+MAX_TASK_SCORE = 0.99
 
 
 def _serialize_enum_list(values: list) -> set[str]:
     return {value.value if hasattr(value, "value") else str(value) for value in values}
+
+
+def _normalize_task_score(score: float) -> float:
+    return round(min(max(score, MIN_TASK_SCORE), MAX_TASK_SCORE), 4)
 
 
 def validate_action(action: Action) -> str | None:
@@ -171,7 +177,7 @@ def _grade_easy(action: Action, state: dict[str, Any]) -> tuple[float, dict[str,
         "no_unnecessary_escalation": 0.10 if action.escalation_team == EscalationTeam.none else 0.0,
         "no_unnecessary_request_info": 0.10 if action.decision != Decision.request_info and not action.request_fields else 0.0,
     }
-    score = round(sum(breakdown.values()), 4)
+    score = _normalize_task_score(sum(breakdown.values()))
     if score >= 0.85:
         feedback = "Direct refund is appropriate: damage is documented and within policy."
     else:
@@ -227,7 +233,7 @@ def _grade_medium(action: Action, state: dict[str, Any]) -> tuple[float, dict[st
         state["phase1_breakdown_raw"] = raw
         _maybe_reveal_medium_details(action, state)
         weighted = {f"phase1_{key}": value * 0.45 for key, value in raw.items()}
-        score = min(round(sum(weighted.values()), 4), 1.0)
+        score = _normalize_task_score(sum(weighted.values()))
         if state["phase"] == "final_resolution":
             feedback = "The missing details were requested correctly. You can now resolve the case."
         else:
@@ -246,7 +252,7 @@ def _grade_medium(action: Action, state: dict[str, Any]) -> tuple[float, dict[st
     phase1_weighted = {f"phase1_{key}": value * 0.45 for key, value in state.get("phase1_breakdown_raw", {}).items()}
     phase2_weighted = {f"phase2_{key}": value * 0.55 for key, value in raw_phase2.items()}
     breakdown = {**phase1_weighted, **phase2_weighted}
-    score = min(round(sum(breakdown.values()), 4), 1.0)
+    score = _normalize_task_score(sum(breakdown.values()))
     if phase1_raw >= 0.75 and sum(raw_phase2.values()) >= 0.85:
         feedback = "Correct: verification completed first, then first-line troubleshooting was applied."
     else:
@@ -266,7 +272,7 @@ def _grade_hard(action: Action, state: dict[str, Any]) -> tuple[float, dict[str,
         "no_direct_refund": 0.10 if action.decision != Decision.refund else 0.0,
         "no_unnecessary_request_info": 0.05 if action.decision != Decision.request_info else 0.0,
     }
-    score = round(sum(breakdown.values()), 4)
+    score = _normalize_task_score(sum(breakdown.values()))
     if score >= 0.75:
         feedback = "Fraud review is the correct destination because a chargeback flag overrides the refund exception."
     else:
