@@ -53,7 +53,7 @@ Build a complete, real-world OpenEnv environment that an AI agent can learn from
 - Must simulate a real-world task, not a game or toy.
 - Implement the full OpenEnv spec: typed models, `step()`, `reset()`, `state()`, and `openenv.yaml`.
 - Minimum 3 tasks with agent graders across easy -> medium -> hard.
-- Scores and rewards must stay in the `0.0-1.0` range.
+- Task scores must stay strictly within `(0, 1)`, while rewards should stay within `[0.0, 1.0]`.
 - Reward function must provide meaningful partial-progress signals.
 - Include a baseline inference script with reproducible scores.
 - Deploy to Hugging Face Spaces with a working Dockerfile.
@@ -89,7 +89,7 @@ Implement the full OpenEnv interface:
 
 #### Minimum 3 tasks with agent graders
 
-Each task must define a concrete objective the agent must accomplish, with a programmatic grader that scores performance in the `0.0-1.0` range.
+Each task must define a concrete objective the agent must accomplish, with a programmatic grader that scores performance strictly within `(0, 1)`.
 
 Requirements:
 
@@ -166,7 +166,7 @@ README must include:
 ### Task and grader quality (25%)
 
 - 3+ tasks with clear difficulty range
-- Graders produce scores between `0.0` and `1.0`
+- Graders produce scores strictly between `0.0` and `1.0`
 - Graders are deterministic and reproducible
 - Hard task genuinely challenges frontier models
 
@@ -255,7 +255,7 @@ All of these must pass or you are disqualified.
 
 - Enumerate tasks
 - Run each grader
-- Verify scores and rewards stay in the `0.0-1.0` range
+- Verify task scores stay strictly within `(0, 1)` and rewards stay within `[0.0, 1.0]`
 
 ## Mandatory Additional Instructions
 
@@ -292,7 +292,7 @@ Rules:
 - `done` and `success` are lowercase booleans: `true` or `false`
 - `error` is the raw `last_action_error` string, or `null` if none
 - All fields must stay on a single line
-- Each task should return a score in `[0, 1]`
+- Each task should return a score strictly within `(0, 1)` and never exactly `0.0` or `1.0`
 
 Example:
 
@@ -300,8 +300,8 @@ Example:
 [START] task=click-test env=miniwob model=Qwen3-VL-30B
 [STEP] step=1 action=click('123') reward=0.00 done=false error=null
 [STEP] step=2 action=fill('456','text') reward=0.00 done=false error=null
-[STEP] step=3 action=click('789') reward=1.00 done=true error=null
-[END] success=true steps=3 score=1.00 rewards=0.00,0.00,1.00
+[STEP] step=3 action=click('789') reward=0.95 done=true error=null
+[END] success=true steps=3 score=0.99 rewards=0.00,0.00,0.95
 ```
 
 ## Infra Restrictions
@@ -350,14 +350,14 @@ STDOUT FORMAT
     - done and success are lowercase booleans: true or false.
     - error is the raw last_action_error string, or null if none.
     - All fields on a single line with no newlines within a line.
-    - Each tasks should return score in [0, 1]
+    - Each task should return score strictly within (0, 1), never exactly 0.0 or 1.0
 
   Example:
     [START] task=click-test env=miniwob model=Qwen3-VL-30B
     [STEP] step=1 action=click('123') reward=0.00 done=false error=null
     [STEP] step=2 action=fill('456','text') reward=0.00 done=false error=null
-    [STEP] step=3 action=click('789') reward=1.00 done=true error=null
-    [END] success=true steps=3 score=1.00 rewards=0.00,0.00,1.00
+    [STEP] step=3 action=click('789') reward=0.95 done=true error=null
+    [END] success=true steps=3 score=0.99 rewards=0.00,0.00,0.95
 """
 
 import asyncio
@@ -379,7 +379,7 @@ BENCHMARK = os.getenv("MY_ENV_V4_BENCHMARK", "my_env_v4")
 MAX_STEPS = 8
 TEMPERATURE = 0.7
 MAX_TOKENS = 150
-SUCCESS_SCORE_THRESHOLD = 0.1  # normalized score in [0, 1]
+SUCCESS_SCORE_THRESHOLD = 0.1  # normalized task score target; final reported score must stay in (0, 1)
 
 # Max possible reward: each token contributes 0.1, across all steps
 _MAX_REWARD_PER_STEP = MAX_TOKENS * 0.1
@@ -501,7 +501,7 @@ async def main() -> None:
                 break
 
         score = sum(rewards) / MAX_TOTAL_REWARD if MAX_TOTAL_REWARD > 0 else 0.0
-        score = min(max(score, 0.0), 1.0)
+        score = min(max(score, 0.01), 0.99)
         success = score >= SUCCESS_SCORE_THRESHOLD
 
     finally:
