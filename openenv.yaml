@@ -1,77 +1,144 @@
-name: sql-query-debugging
+name: customer-support-escalation-desk
 version: "1.0.0"
 description: >
-  An OpenEnv environment for training and evaluating AI agents on real-world SQL
-  debugging and optimization tasks. Agents fix syntax errors, correct logic bugs,
-  and rewrite inefficient correlated subqueries — skills every data engineer needs.
+  An OpenEnv environment for real-world customer support decision making. Agents
+  review customer cases, policy snippets, account metadata, and prior messages
+  to decide whether to refund, request more information, troubleshoot, escalate,
+  or close a case. Tasks cover straightforward refunds, incomplete technical
+  reports, and policy edge cases involving fraud risk.
 author: ""
 tags:
   - openenv
-  - sql
-  - debugging
-  - optimization
-  - code
+  - customer-support
+  - escalation
+  - policy
+  - support-ops
   - real-world
 
 tasks:
-  - id: easy_syntax_fix
-    name: "Fix SQL Syntax Error"
+  - id: easy_refund_eligible
+    name: "Resolve Obvious Refund Eligibility"
     difficulty: easy
     description: >
-      A SELECT statement is missing the FROM keyword. Fix it so it returns
-      all customers older than 30, ordered by name.
-    max_steps: 5
-    reward_threshold: 0.8
+      A customer reports a damaged delivery with photo evidence already attached
+      and the order is within the refund window. Choose the correct support
+      resolution.
+    max_steps: 4
+    reward_threshold: 0.85
 
-  - id: medium_logic_fix
-    name: "Fix SQL Logic Bug (HAVING vs WHERE)"
+  - id: medium_missing_info_tech_issue
+    name: "Request Missing Details Before Troubleshooting"
     difficulty: medium
     description: >
-      A query incorrectly uses WHERE with an aggregate function AVG(salary).
-      Fix it to return departments where the average salary exceeds 60,000.
-    max_steps: 8
-    reward_threshold: 0.8
+      A customer reports a technical issue, but the case is missing the order
+      identifier and product model. Request the right information first, then
+      choose the correct next action.
+    max_steps: 6
+    reward_threshold: 0.80
 
-  - id: hard_optimization
-    name: "Optimize Correlated Subquery"
+  - id: hard_policy_edge_case
+    name: "Handle a Fraud-Flagged Policy Exception"
     difficulty: hard
     description: >
-      A query uses four correlated subqueries (O(n²) complexity). Rewrite it
-      with a single JOIN + GROUP BY to produce identical results efficiently.
-    max_steps: 10
-    reward_threshold: 0.7
+      An angry VIP customer is demanding an exception refund, but the account
+      has an active chargeback flag and an in-flight replacement. Choose the
+      correct policy-safe escalation path.
+    max_steps: 6
+    reward_threshold: 0.75
 
 action_space:
   type: object
   required:
-    - sql_query
+    - decision
+    - priority
   properties:
-    sql_query:
+    decision:
       type: string
-      description: "The SQL query submitted as an attempt"
-    explanation:
+      enum:
+        - refund
+        - troubleshoot
+        - escalate
+        - close
+        - request_info
+    priority:
       type: string
-      description: "Agent's optional reasoning about the fix"
+      enum:
+        - low
+        - medium
+        - high
+        - urgent
+    reason_codes:
+      type: array
+      items:
+        type: string
+        enum:
+          - damaged_item
+          - technical_issue
+          - missing_information
+          - within_return_window
+          - policy_exception
+          - fraud_risk
+          - repeat_contact
+    request_fields:
+      type: array
+      items:
+        type: string
+        enum:
+          - order_id
+          - device_model
+          - photo_evidence
+          - delivery_date
+          - serial_number
+    recommended_steps:
+      type: array
+      items:
+        type: string
+        enum:
+          - confirm_power_source
+          - factory_reset
+          - check_tracking
+          - verify_account_email
+    escalation_team:
+      type: string
+      enum:
+        - none
+        - billing_review
+        - logistics_ops
+        - technical_support
+        - fraud_review
+        - retention_desk
+    customer_message:
+      type: string
 
 observation_space:
   type: object
   properties:
     task_id:
       type: string
+    case_id:
+      type: string
     task_description:
       type: string
-    broken_query:
+    conversation_history:
+      type: array
+    customer_tier:
       type: string
-    schema_info:
+    sentiment:
       type: string
-    error_message:
+    urgency:
       type: string
-      nullable: true
-    last_submission:
-      type: string
-      nullable: true
-    last_execution_result:
+    order_snapshot:
       type: object
+    policy_snippet:
+      type: string
+    known_facts:
+      type: array
+    missing_fields:
+      type: array
+    phase:
+      type: string
+    feedback:
+      type: string
       nullable: true
     hint:
       type: string
@@ -82,6 +149,9 @@ observation_space:
       type: integer
     done:
       type: boolean
+    last_action_error:
+      type: string
+      nullable: true
 
 endpoints:
   reset: "POST /reset"
@@ -90,3 +160,4 @@ endpoints:
   tasks: "GET /tasks"
   grader: "POST /grader"
   baseline: "POST /baseline"
+

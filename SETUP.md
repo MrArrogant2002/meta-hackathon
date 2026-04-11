@@ -1,88 +1,60 @@
-# Setup Instructions for Validators & Developers
+# Setup Instructions for Validators and Developers
 
-## For Hugging Face Spaces Deployment (Recommended for Hackathon)
+## 1. Install Dependencies
 
-1. **Deploy the Space** from this repository
-2. **Configure HF_TOKEN as a Space Secret:**
-   - Go to Space Settings → Variables and secrets
-   - Add new secret:
-     - Name: `HF_TOKEN`
-     - Value: Your HuggingFace token from https://huggingface.co/settings/tokens
-3. The inference script will automatically use the secret when running in the Space
-
-## For Local Development & Testing
-
-1. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. **Create .env file from template:**
-   ```bash
-   cp .env.example .env
-   ```
-
-3. **Edit .env and add your HF_TOKEN:**
-   ```bash
-   # .env file
-   HF_TOKEN=your_actual_hf_token_here
-   ```
-
-4. **Start the environment server:**
-   ```bash
-   uvicorn app.main:app --host 0.0.0.0 --port 7860 --workers 1
-   ```
-
-5. **Run inference (in another terminal):**
-   ```bash
-   python inference.py
-   ```
-
-## Pre-Submission Validation Checklist
-
-✅ **OpenEnv validation passes:**
 ```bash
-openenv validate
+pip install -r requirements.txt
 ```
 
-✅ **Docker builds successfully:**
+## 2. Run the Environment
+
 ```bash
-docker build -t sql-debug-env .
+uvicorn app.main:app --host 0.0.0.0 --port 7860 --workers 1
 ```
 
-✅ **Server responds to /reset:**
+## 3. Optional Docker Run
+
 ```bash
-curl -X POST http://localhost:7860/reset -H "Content-Type: application/json" -d '{"task_id": "easy_syntax_fix"}'
+docker build -t customer-support-escalation-desk .
+docker run -p 7860:7860 customer-support-escalation-desk
 ```
 
-✅ **Inference script runs without errors:**
+## 4. Run the Deterministic Baseline
+
 ```bash
+curl -X POST http://localhost:7860/baseline
+```
+
+## 5. Run Validator-Facing Inference
+
+```bash
+export HF_TOKEN=your_token_here
+export MODEL_NAME=Qwen/Qwen2.5-72B-Instruct
+export API_BASE_URL=https://router.huggingface.co/v1
 python inference.py
 ```
 
-✅ **All 3 tasks return scores in [0.0, 1.0]**
-
-✅ **Output follows [START], [STEP], [END] format**
-
-## Environment Variables Reference
+## Environment Variables
 
 | Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| HF_TOKEN | **Yes** | - | HuggingFace API token for LLM inference |
-| MODEL_NAME | No | Qwen/Qwen2.5-72B-Instruct | Model to use for inference |
-| API_BASE_URL | No | https://router.huggingface.co/v1 | LLM API endpoint |
-| ENV_HOST | No | http://localhost:7860 | Environment server URL |
+| --- | --- | --- | --- |
+| `HF_TOKEN` | Yes for `inference.py` | - | Token used by the OpenAI client |
+| `MODEL_NAME` | No | `Qwen/Qwen2.5-72B-Instruct` | Model identifier for inference |
+| `API_BASE_URL` | No | `https://router.huggingface.co/v1` | OpenAI-compatible inference endpoint |
+| `ENV_HOST` | No | `http://localhost:7860` | Base URL of the environment |
 
-## Troubleshooting
+## Validation Checks
 
-**Q: Inference script fails with authentication error**
-- A: Make sure HF_TOKEN is set correctly in .env (local) or Space secrets (deployed)
+- `openenv validate`
+- `docker build -t customer-support-escalation-desk .`
+- `POST /reset` returns `200`
+- `POST /baseline` returns deterministic scores
+- `python inference.py` prints only `[START]`, `[STEP]`, and `[END]` line types
 
-**Q: Server not responding**
-- A: Check that the server is running on port 7860: `curl http://localhost:7860/health`
+## Hugging Face Spaces
 
-**Q: Docker build fails**
-- A: Ensure all files are present: app/, baseline/, openenv.yaml, requirements.txt
+Set these as Space secrets if you run `inference.py` in a deployed environment:
 
-**Q: Scores are all 0.0**
-- A: Check that the LLM API is accessible and HF_TOKEN is valid
+- `HF_TOKEN`
+- `MODEL_NAME` if overriding the default
+- `API_BASE_URL` if overriding the default router

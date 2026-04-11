@@ -1,7 +1,8 @@
-__pycache__
+.git
+.codex
+.env
+__pycache__/
 *.pyc
 *.pyo
-.git
-.env
-*.md
 baseline_results.json
+

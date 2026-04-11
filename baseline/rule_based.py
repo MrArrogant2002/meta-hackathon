@@ -1,86 +1,82 @@
-"""
-Deterministic rule-based baseline agent.
-Used by the /baseline endpoint for reproducible, dependency-free scoring.
-"""
-import re
-from app.tasks import TASK_REGISTRY, HARD_CANONICAL
-from app.database import create_session_db
+from app import environment as env
+from app.models import (
+    Action,
+    Decision,
+    EscalationTeam,
+    Priority,
+    ReasonCode,
+    RequestField,
+    ResetRequest,
+    TroubleshootStep,
+)
 
 
-def solve_easy(broken_query: str) -> str:
-    """Insert FROM before table name (missing FROM keyword fix)."""
-    fixed = re.sub(
-        r'(SELECT\s+[\w\s,.*]+?)\n(customers|orders|employees)\n',
-        r'\1\nFROM \2\n',
-        broken_query,
-        flags=re.IGNORECASE,
-    )
-    if fixed == broken_query:
-        # Fallback: insert FROM before table name on same line
-        fixed = re.sub(
-            r'(SELECT\b[^\n]+)\n(customers|orders|employees)\b',
-            r'\1\nFROM \2',
-            broken_query,
-            flags=re.IGNORECASE,
+PLAYBOOK = {
+    "easy_refund_eligible": [
+        Action(
+            decision=Decision.refund,
+            priority=Priority.medium,
+            reason_codes=[ReasonCode.damaged_item, ReasonCode.within_return_window],
+            escalation_team=EscalationTeam.none,
         )
-    return fixed
-
-
-def solve_medium(broken_query: str) -> str:
-    """Move aggregate condition from WHERE to HAVING."""
-    # Remove WHERE AVG(...) > ... line
-    fixed = re.sub(
-        r'\bWHERE\s+(AVG|SUM|COUNT|MAX|MIN)\s*\([^)]*\)\s*>\s*\d+\b',
-        '',
-        broken_query,
-        flags=re.IGNORECASE,
-    )
-    # Add HAVING after GROUP BY
-    fixed = re.sub(
-        r'(GROUP BY\s+\w+)\s*;?$',
-        r'\1\nHAVING AVG(salary) > 60000',
-        fixed.strip(),
-        flags=re.IGNORECASE,
-    )
-    return fixed.strip() + ';'
-
-
-def solve_hard(_broken_query: str) -> str:
-    """Return the canonical optimized query directly."""
-    return HARD_CANONICAL
-
-
-SOLVERS = {
-    "easy_syntax_fix": solve_easy,
-    "medium_logic_fix": solve_medium,
-    "hard_optimization": solve_hard,
+    ],
+    "medium_missing_info_tech_issue": [
+        Action(
+            decision=Decision.request_info,
+            priority=Priority.medium,
+            reason_codes=[ReasonCode.missing_information],
+            request_fields=[RequestField.order_id, RequestField.device_model],
+            escalation_team=EscalationTeam.none,
+        ),
+        Action(
+            decision=Decision.troubleshoot,
+            priority=Priority.medium,
+            reason_codes=[ReasonCode.technical_issue],
+            recommended_steps=[
+                TroubleshootStep.confirm_power_source,
+                TroubleshootStep.factory_reset,
+            ],
+            escalation_team=EscalationTeam.none,
+        ),
+    ],
+    "hard_policy_edge_case": [
+        Action(
+            decision=Decision.escalate,
+            priority=Priority.high,
+            reason_codes=[
+                ReasonCode.fraud_risk,
+                ReasonCode.policy_exception,
+                ReasonCode.repeat_contact,
+            ],
+            escalation_team=EscalationTeam.fraud_review,
+        )
+    ],
 }
 
 
-def run_baseline() -> dict:
-    """
-    Run the rule-based solver against all 3 tasks.
-    Returns scores and breakdown for each task.
-    """
-    from app.tasks import TASK_REGISTRY
+def run_baseline() -> dict[str, dict]:
+    results: dict[str, dict] = {}
+    for task_id, actions in PLAYBOOK.items():
+        reset_result = env.reset(ResetRequest(task_id=task_id))
+        history = []
+        final_breakdown = {}
+        best_score = 0.0
+        solved = False
 
-    results = {}
-    for task_id, task_cfg in TASK_REGISTRY.items():
-        solver = SOLVERS[task_id]
-        fixed_sql = solver(task_cfg["broken_query"])
-
-        # Create fresh DB and grade
-        conn = create_session_db()
-        try:
-            score, breakdown = task_cfg["grader"](fixed_sql, conn)
-        finally:
-            conn.close()
+        for action in actions:
+            step_result = env.step(reset_result.session_id, action)
+            history.append(action.model_dump(mode="json"))
+            final_breakdown = step_result.reward.components
+            best_score = max(best_score, step_result.info.get("best_score_so_far", 0.0))
+            solved = step_result.info.get("solved", False)
+            if step_result.done:
+                break
 
         results[task_id] = {
-            "score": round(score, 4),
-            "submitted_query": fixed_sql,
-            "breakdown": breakdown,
-            "solved": score >= task_cfg["reward_threshold"],
+            "score": round(best_score, 4),
+            "solved": solved,
+            "breakdown": final_breakdown,
+            "actions": history,
         }
-
     return results
+

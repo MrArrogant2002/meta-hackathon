@@ -1,5 +1,5 @@
 import uvicorn
-from app.main import app  # noqa: F401 — re-export for OpenEnv multi-mode
+from app.main import app  # noqa: F401
 
 
 def main():
